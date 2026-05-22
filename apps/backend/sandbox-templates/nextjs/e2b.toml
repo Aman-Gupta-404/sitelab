@@ -1,0 +1,17 @@
+# This is a config for E2B sandbox template.
+# You can use template ID (nlhl8t9h0ydl2m2fdccv) or template name (sitelab-next-test-2) to create a sandbox:
+
+# Python SDK
+# from e2b import Sandbox, AsyncSandbox
+# sandbox = Sandbox.create("sitelab-next-test-2") # Sync sandbox
+# sandbox = await AsyncSandbox.create("sitelab-next-test-2") # Async sandbox
+
+# JS SDK
+# import { Sandbox } from 'e2b'
+# const sandbox = await Sandbox.create('sitelab-next-test-2')
+
+team_id = "ceb20a2f-1bf1-426d-8eb8-d46525bce125"
+start_cmd = "/compile_page.sh"
+dockerfile = "e2b.Dockerfile"
+template_name = "sitelab-next-test-2"
+template_id = "nlhl8t9h0ydl2m2fdccv"

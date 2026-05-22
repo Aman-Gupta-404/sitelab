@@ -1,0 +1,393 @@
+import { InternalServerError } from "@/shared/errors/http-error.js";
+import { MessageModel } from "../model/message.model.js";
+import type {
+  ClientProjectResponse,
+  CreateMessageBody,
+  FileDocument,
+  HandlePromptResponseBody,
+  TreeNode,
+} from "../types/project.types.js";
+import mongoose from "mongoose";
+import { generateSlug } from "random-word-slugs";
+import { ProjectModel, type IProject } from "../model/project.model.js";
+import { nanoid } from "nanoid";
+import type { StoreFilesOptions } from "@/types/common.js";
+import { generateHash } from "@/shared/utils/helper.js";
+import { ProjectFileModel } from "../model/files.model.js";
+import { getTemplateFiles } from "@/shared/utils/templateFiles.js";
+
+export class ProjectRepository {
+  // ========================== helper methods ==========================
+  generateProjectName() {
+    return `${generateSlug(2, {
+      format: "kebab",
+    })}-${nanoid(5)}`;
+  }
+
+  buildFileTree(files: FileDocument[]): TreeNode[] {
+    const root: TreeNode[] = [];
+
+    for (const file of files) {
+      const parts = file.path.split("/").filter(Boolean);
+
+      let currentLevel = root;
+
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i] ?? "";
+
+        const currentPath = "/" + parts.slice(0, i + 1).join("/");
+
+        const isFile = i === parts.length - 1;
+
+        let existingNode = currentLevel.find((node) => node.name === part);
+
+        //
+        // CREATE NODE IF NOT EXISTS
+        //
+
+        if (!existingNode) {
+          existingNode = {
+            name: part,
+            path: currentPath,
+            type: isFile ? "file" : "folder",
+
+            children: isFile ? undefined : [],
+          };
+
+          currentLevel.push(existingNode);
+        }
+
+        //
+        // MOVE DEEPER
+        //
+
+        if (existingNode.type === "folder") {
+          currentLevel = existingNode.children!;
+        }
+      }
+    }
+
+    // return sortTree(root);
+    return root;
+  }
+
+  // ========================== service functions ==========================
+  async handlePrompt(data: CreateMessageBody) {
+    const session = await mongoose.startSession();
+
+    try {
+      const result = await session.withTransaction(async () => {
+        // add message to DB
+        const message = new MessageModel({
+          content: data.content,
+          role: "user",
+        });
+
+        await message.save({ session });
+
+        // add project to DB
+        let project;
+        let retries = 5;
+        while (retries > 0) {
+          try {
+            const projectName = this.generateProjectName();
+
+            project = new ProjectModel({
+              messages: [message._id],
+              name: projectName,
+              userId: "69ea5d364274bf270930857a",
+            });
+
+            await project.save({ session });
+
+            // success
+            break;
+          } catch (error: any) {
+            // duplicate key error
+            if (error.code === 11000) {
+              retries--;
+              continue;
+            }
+
+            throw error;
+          }
+        }
+
+        if (!project) {
+          throw new Error("Failed to generate unique project name");
+        }
+
+        const parsedProject = project.toJSON();
+
+        // add initial project files to DB
+        const files = await getTemplateFiles();
+
+        const insertObjs = files.map((file) => {
+          const hash = generateHash(file.content);
+          return {
+            projectId: parsedProject._id,
+            path: file.path,
+            content: file.content,
+            hash: hash,
+            size: Buffer.byteLength(file.content, "utf8"),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+        });
+
+        const filesUpdate = await ProjectFileModel.insertMany(insertObjs);
+        console.log({ filesUpdate });
+
+        return {
+          message: data.content,
+          _id: parsedProject._id,
+          name: parsedProject.name,
+          userId: parsedProject.userId,
+          projectUrl: parsedProject.projectUrl,
+        };
+      });
+      return result;
+    } catch (error: any) {
+      throw new InternalServerError(
+        error.message ?? "Error in creating project & message",
+      );
+    } finally {
+      session.endSession();
+    }
+  }
+
+  async getProject(slug: string) {
+    try {
+      const project = await ProjectModel.findOne(
+        {
+          name: slug,
+        },
+        { messages: 0, updatedAt: 0, createdAt: 0 },
+      );
+
+      return project;
+    } catch (error: any) {
+      throw new InternalServerError(
+        error.message ?? "Error in creating project & message",
+      );
+    }
+  }
+
+  async getProjectFiles(slug: string) {
+    try {
+      const files = await ProjectModel.aggregate([
+        {
+          $match: {
+            name: slug,
+          },
+        },
+        {
+          $lookup: {
+            from: "projectfiles",
+            localField: "_id",
+            foreignField: "projectId",
+            as: "files",
+          },
+        },
+        {
+          $unwind: {
+            path: "$files",
+            preserveNullAndEmptyArrays: false,
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            path: "$files.path",
+            content: "$files.content",
+            hash: "$files.hash",
+          },
+        },
+      ]);
+
+      // BUILD FILE MAP
+      const fileMap: ClientProjectResponse["files"] = {};
+
+      for (const file of files) {
+        fileMap[file.path] = {
+          content: file.content,
+          hash: file.hash,
+        };
+      }
+
+      // BUILD TREE
+      const tree = this.buildFileTree(files);
+
+      return {
+        tree,
+        files: fileMap,
+      };
+    } catch (error: any) {
+      throw new InternalServerError(
+        error.message ?? "Error in creating project & message",
+      );
+    }
+  }
+
+  async handlePromptResponse(data: HandlePromptResponseBody) {
+    const session = await mongoose.startSession();
+
+    try {
+      const result = await session.withTransaction(async () => {
+        const message = new MessageModel({
+          content: data.message,
+          role: "agent",
+        });
+
+        await message.save({ session });
+
+        const projectResult = await ProjectModel.updateOne(
+          { _id: data.projectId },
+          {
+            $push: { messages: message._id },
+            $set: {
+              projectUrl: "https://amangupta2001.netlify.app/",
+            },
+          },
+          { session },
+        );
+
+        console.log({ projectResult });
+
+        if (projectResult.matchedCount === 0) {
+          throw new Error("Project not found");
+        }
+
+        if (projectResult.modifiedCount === 0) {
+          throw new Error("Project not updated");
+        }
+
+        return {
+          message: data.message,
+        };
+      });
+      return result;
+    } catch (error: any) {
+      throw new InternalServerError(
+        error.message ?? "Error in handling project response",
+      );
+    } finally {
+      session.endSession();
+    }
+  }
+
+  async uploadProjectFiles({ projectId, files }: StoreFilesOptions) {
+    try {
+      const bulkOperations = [];
+      const projectObjectId = new mongoose.Types.ObjectId(projectId);
+
+      for (const file of files) {
+        const hash = generateHash(file.content);
+
+        //
+        // OPTIONAL OPTIMIZATION:
+        // Skip DB write if hash is unchanged
+        //
+
+        // TODO: Very unoptimized, update this laterOn
+        const existingFile = await ProjectFileModel.findOne({
+          projectId: projectObjectId,
+          path: file.path,
+        }).select("hash");
+
+        if (existingFile?.hash === hash) {
+          continue;
+        }
+
+        bulkOperations.push({
+          updateOne: {
+            filter: {
+              projectId: projectObjectId,
+              path: file.path,
+            },
+
+            update: {
+              $set: {
+                content: file.content,
+                hash,
+                size: Buffer.byteLength(file.content, "utf8"),
+              },
+
+              $setOnInsert: {
+                projectId: projectObjectId,
+                path: file.path,
+              },
+            },
+
+            upsert: true,
+          },
+        });
+      }
+
+      if (!bulkOperations.length) {
+        return {
+          success: true,
+          updatedFiles: 0,
+        };
+      }
+
+      await ProjectFileModel.bulkWrite(bulkOperations);
+
+      return {
+        success: true,
+        updatedFiles: bulkOperations.length,
+      };
+    } catch (error: any) {
+      throw new InternalServerError(
+        error.message ?? "Error in Uploading the files",
+      );
+    }
+  }
+
+  async getProjectMessages(slug: string) {
+    try {
+      const messages = await ProjectModel.aggregate([
+        {
+          $match: {
+            name: slug,
+          },
+        },
+        {
+          $lookup: {
+            from: "messages",
+            localField: "messages",
+            foreignField: "_id",
+            pipeline: [
+              {
+                $project: {
+                  content: 1,
+                  role: 1,
+                  createdAt: 1,
+                },
+              },
+              {
+                $sort: { createdAt: 1 },
+              },
+            ],
+            as: "messages",
+          },
+        },
+        {
+          $project: {
+            updatedAt: 0,
+            __v: 0,
+          },
+        },
+      ]);
+
+      console.log({ messages });
+
+      return messages[0];
+      return null;
+    } catch (error: any) {
+      throw new InternalServerError(
+        error.message ?? "Error in fetching project messages",
+      );
+    }
+  }
+}
