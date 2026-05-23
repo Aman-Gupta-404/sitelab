@@ -1,6 +1,6 @@
 export interface CreateMessageBody {
   content: string;
-  role: "assistant" | "user";
+  role: "agent" | "user";
 }
 
 export interface HandlePromptResponseBody {

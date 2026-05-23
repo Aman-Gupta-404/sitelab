@@ -13,10 +13,10 @@ export class UserController {
   getUsers = async (req: Request, res: Response) => {
     const users = await this.userService.getUsers();
     const aiClient = new LlmClient();
-    aiClient.promptLLM("make a simple todo application");
-    await aiQueue.add("generate-code", {
-      prompt: "make a todo app",
-    });
+    // aiClient.promptLLM("make a simple todo application");
+    // await aiQueue.add("generate-code", {
+    //   prompt: "make a todo app",
+    // });
     res.json(users);
   };
 }

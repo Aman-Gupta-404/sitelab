@@ -1,5 +1,5 @@
 {
-  "name": "sitelab_backend",
+  "name": "sitelab-backend",
   "version": "1.0.0",
   "type": "module",
   "description": "this is the backend for sitelab project",
