@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuth } from "@clerk/nextjs";
 
 export const axiosInstance = axios.create({
   //   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
@@ -12,8 +13,8 @@ export const axiosInstance = axios.create({
 // Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const { getToken } = useAuth();
+    const token = getToken();
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

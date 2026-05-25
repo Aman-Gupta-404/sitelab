@@ -19,4 +19,8 @@ export class UserController {
     // });
     res.json(users);
   };
+
+  handleClerkWebhook = async (req: Request, res: Response) => {
+    return await this.userService.handleClerkWebhook(req, res);
+  };
 }

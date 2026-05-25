@@ -1,9 +1,11 @@
+import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { ClerkProvider } from "@clerk/nextjs";
 
 import "./globals.css";
-import { Toaster } from "sonner";
+import Navbar from "@/components/layout/navbar";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -21,18 +23,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
-      <body className="min-h-full flex flex-col">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <Toaster />
-          {children}
-        </ThemeProvider>
-      </body>
-    </html>
+    <ClerkProvider
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      afterSignOutUrl="/"
+    >
+      <html lang="en" className={inter.variable} suppressHydrationWarning>
+        <body className="min-h-full flex flex-col">
+          <Navbar />
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <Toaster />
+            {children}
+          </ThemeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
