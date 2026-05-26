@@ -19,7 +19,6 @@ export class MessagesService {
     // await aiQueue.add("generate-code", {
     //   prompt: "make a todo app",
     // });
-    console.log("Reached here");
     return true;
   }
 }

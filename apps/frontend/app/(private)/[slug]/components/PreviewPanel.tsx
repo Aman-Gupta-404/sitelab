@@ -1,13 +1,13 @@
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import CodeView from "@/features/project/components/code-view";
-import FileExplorer from "@/features/project/components/FileExplorer";
-import WebView from "@/features/project/components/WebView";
-import { cn } from "@/lib/utils";
-import { ErrorType, Project } from "@/types/common.types";
-import { CodeIcon, CrownIcon, EyeIcon } from "lucide-react";
 import Link from "next/link";
-import React, { useState } from "react";
+import { useState } from "react";
+import { CodeIcon, CrownIcon, EyeIcon } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import UserControl from "@/components/layout/UserControl";
+import { ErrorType, Project } from "@/types/common.types";
+import WebView from "@/features/project/components/WebView";
+import CodeView from "@/features/project/components/code-view";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Props {
   project: Project | ErrorType | null;
@@ -31,12 +31,9 @@ function PreviewPanel(props: Props) {
         <TabsList className="p-0 border rounded-md">
           <TabsTrigger
             value="preview"
-            // className={cn(
-            //   tabState === "preview" ? "bg-sidebar color-red" : null,
-            // )}
             className={
               tabState === "preview"
-                ? "bg-sidebar text-destructive border-sidebar-border"
+                ? "bg-sidebar text-foreground border-sidebar-border"
                 : ""
             }
           >
@@ -46,7 +43,7 @@ function PreviewPanel(props: Props) {
             value="code"
             className={
               tabState === "code"
-                ? "bg-sidebar text-destructive border-sidebar-border"
+                ? "bg-sidebar text-foreground border-sidebar-border"
                 : ""
             }
           >
@@ -60,6 +57,7 @@ function PreviewPanel(props: Props) {
               <CrownIcon /> Upgrade
             </Link>
           </Button>
+          <UserControl />
         </div>
       </div>
       <TabsContent value="preview">

@@ -1,9 +1,11 @@
-import type { NextFunction, Request, Response } from "express";
-import { ProjectService } from "../service/project.service.js";
-import type { CreateMessageBody } from "../types/project.types.js";
+import {
+  AuthorizationError,
+  BadRequestError,
+} from "@/shared/errors/http-error.js";
+import { getAuth } from "@clerk/express";
 import { sendSuccess } from "@/shared/utils/response.js";
-import { BadRequestError } from "@/shared/errors/http-error.js";
-import redisClient from "@/infra/redis/redis.client.js";
+import { ProjectService } from "../service/project.service.js";
+import type { NextFunction, Request, Response } from "express";
 
 export class ProjectController {
   private service: ProjectService;
@@ -16,16 +18,19 @@ export class ProjectController {
   handlePrompt = async (req: Request, res: Response, next: NextFunction) => {
     const data = req.body;
     try {
-      // create a message with user role
-      const message = await this.service.handlePrompt(data);
+      // get the userId from clerk handler
+      const auth = getAuth(req);
 
-      // make axios api call
+      if (!auth || !auth.userId) {
+        throw new AuthorizationError();
+      }
+
+      const userClerkId = auth.userId;
+
+      const message = await this.service.handlePrompt(data, userClerkId);
 
       return sendSuccess(res, message, 201);
     } catch (error: any) {
-      console.log("E1");
-      console.log(error);
-
       next(error);
     }
   };
@@ -35,6 +40,12 @@ export class ProjectController {
     res: Response,
     next: NextFunction,
   ) => {
+    const auth = getAuth(req);
+
+    if (!auth || !auth.userId) {
+      throw new AuthorizationError();
+    }
+
     const projectId = req.query.projectId as string;
     try {
       // SSE headers
@@ -56,9 +67,17 @@ export class ProjectController {
   getProject = async (req: Request, res: Response, next: NextFunction) => {
     const slug = req.query.slug as string;
     try {
+      const auth = getAuth(req);
+
+      if (!auth || !auth.userId) {
+        throw new AuthorizationError();
+      }
+
+      const userClerkId = auth.userId;
+
       if (!slug) throw new BadRequestError("Project title required");
       // create a message with user role
-      const project = await this.service.getProject(slug);
+      const project = await this.service.getProject(slug, userClerkId);
 
       // make axios api call
 
@@ -72,8 +91,14 @@ export class ProjectController {
     const slug = req.query.slug as string;
     try {
       if (!slug) throw new BadRequestError("Project title required");
+      const auth = getAuth(req);
+
+      if (!auth || !auth.userId) {
+        throw new AuthorizationError();
+      }
+
       // create a message with user role
-      const project = await this.service.getProjectFiles(slug);
+      const project = await this.service.getProjectFiles(slug, auth.userId);
 
       // make axios api call
 

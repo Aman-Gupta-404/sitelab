@@ -56,7 +56,7 @@ export const ProjectForm = () => {
         router.push(`/${res.data.name}`);
       }
     } catch (error) {
-      console.log({ error });
+      console.log("error: ", error);
     }
   };
 

@@ -6,6 +6,7 @@ import type {
   FileDocument,
   HandlePromptResponseBody,
   TreeNode,
+  UserOwnsProjectProps,
 } from "../types/project.types.js";
 import mongoose from "mongoose";
 import { generateSlug } from "random-word-slugs";
@@ -72,7 +73,7 @@ export class ProjectRepository {
   }
 
   // ========================== service functions ==========================
-  async handlePrompt(data: CreateMessageBody) {
+  async handlePrompt(data: CreateMessageBody, userId: string) {
     const session = await mongoose.startSession();
 
     try {
@@ -95,7 +96,7 @@ export class ProjectRepository {
             project = new ProjectModel({
               messages: [message._id],
               name: projectName,
-              userId: "69ea5d364274bf270930857a",
+              userId: userId,
             });
 
             await project.save({ session });
@@ -136,7 +137,6 @@ export class ProjectRepository {
         });
 
         const filesUpdate = await ProjectFileModel.insertMany(insertObjs);
-        console.log({ filesUpdate });
 
         return {
           message: data.content,
@@ -158,14 +158,42 @@ export class ProjectRepository {
 
   async getProject(slug: string) {
     try {
-      const project = await ProjectModel.findOne(
+      const project = await ProjectModel.aggregate([
         {
-          name: slug,
+          $match: {
+            name: slug,
+          },
         },
-        { messages: 0, updatedAt: 0, createdAt: 0 },
-      );
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  clerkId: 1,
+                },
+              },
+            ],
+            as: "user",
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            userId: 1,
+            projectUrl: 1,
+            clerkId: "$user.clerkId",
+          },
+        },
+      ]);
 
-      return project;
+      if (!project.length) return null;
+
+      return project[0];
     } catch (error: any) {
       throw new InternalServerError(
         error.message ?? "Error in creating project & message",
@@ -251,8 +279,6 @@ export class ProjectRepository {
           },
           { session },
         );
-
-        console.log({ projectResult });
 
         if (projectResult.matchedCount === 0) {
           throw new Error("Project not found");
@@ -379,8 +405,6 @@ export class ProjectRepository {
           },
         },
       ]);
-
-      console.log({ messages });
 
       return messages[0];
       return null;

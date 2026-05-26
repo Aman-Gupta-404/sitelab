@@ -11,19 +11,19 @@ export const axiosInstance = axios.create({
 });
 
 // Request interceptor
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const { getToken } = useAuth();
-    const token = getToken();
+// axiosInstance.interceptors.request.use(
+//   (config) => {
+//     const { getToken } = useAuth();
+//     const token = getToken();
+//     console.log({ token });
+//     if (token) {
+//       config.headers.Authorization = `Bearer ${token}`;
+//     }
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    return config;
-  },
-  (error) => Promise.reject(error),
-);
+//     return config;
+//   },
+//   (error) => Promise.reject(error),
+// );
 
 // Response interceptor
 axiosInstance.interceptors.response.use(

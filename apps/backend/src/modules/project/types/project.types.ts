@@ -38,3 +38,9 @@ export type ClientProjectResponse = {
     }
   >;
 };
+
+export type UserOwnsProjectProps = {
+  clerkId: string;
+  slug: string | null;
+  project: string | null;
+};

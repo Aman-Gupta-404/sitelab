@@ -1,4 +1,7 @@
-import { InternalServerError } from "@/shared/errors/http-error.js";
+import {
+  InternalServerError,
+  NotFoundError,
+} from "@/shared/errors/http-error.js";
 import { User } from "../model/users.model.js";
 import type { CreateUser } from "../types/user.types.js";
 
@@ -9,6 +12,20 @@ export class UserRepository {
       { id: 1, name: "Aman" },
       { id: 2, name: "John" },
     ];
+  }
+
+  async getUserByClerkId(clerkId: string) {
+    try {
+      const user = await User.findOne({
+        clerkId: clerkId,
+      });
+
+      if (!user) throw new NotFoundError("User not found");
+
+      return user;
+    } catch (error: any) {
+      throw new InternalServerError(error.message ?? "Error in updating User");
+    }
   }
 
   async createUser(user: CreateUser) {

@@ -18,6 +18,18 @@ export class ConflictError extends AppError {
   }
 }
 
+export class AuthorizationError extends AppError {
+  constructor(message = "Conflict") {
+    super(message, 401, "UNAUTHORIZED");
+  }
+}
+
+export class ForbiddenError extends AppError {
+  constructor(message = "Conflict") {
+    super(message, 403, "FORBIDDEN");
+  }
+}
+
 export class InternalServerError extends AppError {
   constructor(message = "INTERNAL_SERVER_ERROR") {
     super(message, 500, "INTERNAL_SERVER_ERROR");

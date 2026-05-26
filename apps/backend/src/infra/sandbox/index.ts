@@ -7,8 +7,6 @@ class SandboxClass {
   private constructor() {} // prevent instantiation
 
   private static async execute(): Promise<string> {
-    console.log("Executing async...");
-
     const sandboxInstance = await Sandbox.create(
       "ag9139563/sitelab-next-test-2",
     );

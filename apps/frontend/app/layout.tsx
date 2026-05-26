@@ -6,6 +6,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 
 import "./globals.css";
 import Navbar from "@/components/layout/navbar";
+import AxiosProvider from "@/features/providers/AxiosProvider";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -28,20 +29,21 @@ export default function RootLayout({
       signUpUrl="/sign-up"
       afterSignOutUrl="/"
     >
-      <html lang="en" className={inter.variable} suppressHydrationWarning>
-        <body className="min-h-full flex flex-col">
-          <Navbar />
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <Toaster />
-            {children}
-          </ThemeProvider>
-        </body>
-      </html>
+      <AxiosProvider>
+        <html lang="en" className={inter.variable} suppressHydrationWarning>
+          <body className="min-h-full flex flex-col">
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <Toaster />
+              {children}
+            </ThemeProvider>
+          </body>
+        </html>
+      </AxiosProvider>
     </ClerkProvider>
   );
 }

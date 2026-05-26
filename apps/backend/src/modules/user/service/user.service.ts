@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 
 import { User } from "../model/users.model.js";
 import { UserRepository } from "../repository/user.repository.js";
+import { InternalServerError } from "@/shared/errors/http-error.js";
 
 export class UserService {
   private userRepository: UserRepository;
@@ -13,6 +14,16 @@ export class UserService {
 
   async getUsers() {
     return this.userRepository.getAllUsers();
+  }
+
+  async getUserByClerkId(clerkId: string) {
+    try {
+      const user = await this.userRepository.getUserByClerkId(clerkId);
+
+      return user;
+    } catch (error: any) {
+      throw new InternalServerError(error.message);
+    }
   }
 
   async handleClerkWebhook(req: Request, res: Response) {

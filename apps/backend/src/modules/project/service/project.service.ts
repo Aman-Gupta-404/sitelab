@@ -1,6 +1,7 @@
 import { aiQueue } from "@/infra/queue/ai.queue.js";
 import { MessageModel } from "../model/message.model.js";
 import {
+  ForbiddenError,
   InternalServerError,
   NotFoundError,
 } from "@/shared/errors/http-error.js";
@@ -15,17 +16,24 @@ import redisClient from "@/infra/redis/redis.client.js";
 import type { Request, Response } from "express";
 import type { CreateMessageBody, SSEPayload } from "../types/project.types.js";
 import logger from "@/shared/utils/logger.js";
-
+import { userApi } from "@/modules/user/service/user.public.service.js";
 export class ProjectService {
   private projectRepository: ProjectRepository;
   constructor(private repo?: ProjectRepository) {
     this.projectRepository = repo ? repo : new ProjectRepository();
   }
 
-  async handlePrompt(data: CreateMessageBody) {
+  async handlePrompt(data: CreateMessageBody, clerkId: string) {
     try {
+      // get the userId from clerkId
+      const user = await userApi.getUserByClerkId(clerkId);
+
       // create a message and project
-      const result = await this.projectRepository.handlePrompt(data);
+      const result = await this.projectRepository.handlePrompt(
+        data,
+        user._id.toString(),
+      );
+
       console.log("handle prompt 1");
       // add to ai queeue
       if (result) {
@@ -58,13 +66,17 @@ export class ProjectService {
     }
   }
 
-  async getProject(slug: string) {
+  async getProject(slug: string, clerkId: string) {
     try {
       // create a message and project
       const result = await this.projectRepository.getProject(slug);
 
       if (!result) {
         throw new NotFoundError("Project not found!");
+      }
+
+      if (result.clerkId.toString() !== clerkId) {
+        throw new ForbiddenError("Not authorized to access this project");
       }
 
       return result;
@@ -74,8 +86,15 @@ export class ProjectService {
     }
   }
 
-  async getProjectFiles(slug: string) {
+  async getProjectFiles(slug: string, userClerkId: string) {
     try {
+      const proj = await this.projectRepository.getProject(slug);
+
+      if (proj.clerkId.toString() !== userClerkId) {
+        // if (proj.clerkId !== userClerkId) {
+        throw new ForbiddenError("Not authorized to access this project");
+      }
+
       // create a message and project
       const result = await this.projectRepository.getProjectFiles(slug);
 
@@ -98,7 +117,7 @@ export class ProjectService {
         content: data.content,
         role: data.role,
       });
-      console.log({ message });
+
       return message;
     } catch (error) {}
   }
@@ -134,9 +153,9 @@ export class ProjectService {
         await this.projectRepository.getProjectMessages(projectId);
 
       send({ type: "processing", data: initialData });
-      console.log({ initialData });
+
       const projectStatus = await getRedisProjectStatus(projectId);
-      console.log({ projectStatus });
+
       if (!projectStatus) {
         // if project status not found in redis, it was never created
         const projectData =
@@ -150,7 +169,6 @@ export class ProjectService {
         res.write("retry: 0\n\n");
         return res.end();
       }
-      console.log({ projectStatus });
 
       if (projectStatus && projectStatus.status === "processed") {
         const projectData =
@@ -172,7 +190,6 @@ export class ProjectService {
       sub.on("message", async (_channel, message) => {
         try {
           const parsed: SSEPayload = JSON.parse(message);
-          console.log({ parsed });
 
           // Validate structure
           if (!parsed.type) {

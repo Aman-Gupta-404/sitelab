@@ -34,9 +34,7 @@ export const getRedisProjectStatus = async (slug: string) => {
   try {
     const redis = redisClient.getClient();
     const key = projectStatusKey(slug);
-    console.log("key: ", key);
     const res = await redis.get(key);
-    console.log("Redis res: ", res);
     return res ? JSON.parse(res) : null;
   } catch (error) {
     return null;
