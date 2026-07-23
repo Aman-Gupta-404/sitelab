@@ -3,9 +3,7 @@ import mongoose from "mongoose";
 
 export async function connectDB() {
   try {
-    // const uri = process.env.MONGO_URI as string;
-    const uri =
-      "mongodb+srv://sitelabmanager:sitelabmanager5348@cluster0.uluvlcy.mongodb.net/sitelab?appName=Cluster0";
+    const uri = process.env.MONGO_URI as string;
 
     await mongoose.connect(uri);
 

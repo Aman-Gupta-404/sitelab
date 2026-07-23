@@ -8,18 +8,15 @@ interface Props {
   message: Message;
 }
 
-// const UserMessage = ({ message }: Props) => {
-//   return (
-//     <div className="flex justify-end pb-4 pr-2 pl-10">
-//       <Card className="rounded-lg bg-muted p-3 shadow-none border-none max-w-[80%] break-words">
-//         {message}
-//       </Card>
-//     </div>
-//   );
-// };
-
 function MessageCard({ message }: Props) {
   const isUser = message.role === "user";
+
+  const formatMessage = (response: string) => {
+    const formatted = response.replace(/<\/?task_summary>/g, "").trim();
+
+    return formatted;
+  };
+
   return (
     <div
       key={message._id}
@@ -30,8 +27,8 @@ function MessageCard({ message }: Props) {
           isUser ? "bg-[#7C5CFF] text-white" : "bg-[#141A2A] text-white"
         }`}
       >
-        <div className="text-sm whitespace-pre-wrap wrap-break-words">
-          {message.content}
+        <div className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-words ">
+          {formatMessage(message.content)}
         </div>
 
         <div className="text-[10px] mt-2 text-white/60 text-right">

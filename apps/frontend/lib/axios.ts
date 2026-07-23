@@ -2,28 +2,12 @@ import axios from "axios";
 import { useAuth } from "@clerk/nextjs";
 
 export const axiosInstance = axios.create({
-  //   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-  baseURL: "http://localhost:3001",
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
 });
-
-// Request interceptor
-// axiosInstance.interceptors.request.use(
-//   (config) => {
-//     const { getToken } = useAuth();
-//     const token = getToken();
-//     console.log({ token });
-//     if (token) {
-//       config.headers.Authorization = `Bearer ${token}`;
-//     }
-
-//     return config;
-//   },
-//   (error) => Promise.reject(error),
-// );
 
 // Response interceptor
 axiosInstance.interceptors.response.use(

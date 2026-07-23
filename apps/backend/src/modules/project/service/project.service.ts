@@ -34,10 +34,8 @@ export class ProjectService {
         user._id.toString(),
       );
 
-      console.log("handle prompt 1");
       // add to ai queeue
       if (result) {
-        console.log("handle prompt 2");
         // update the redis status to be enqueuing
         const r1 = await updateRedisProjectStatus({
           slug: result.name,

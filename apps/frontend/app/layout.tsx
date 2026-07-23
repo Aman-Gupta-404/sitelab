@@ -28,6 +28,11 @@ export default function RootLayout({
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
       afterSignOutUrl="/"
+      appearance={{
+        variables: {
+          colorPrimary: "#6366f1",
+        },
+      }}
     >
       <AxiosProvider>
         <html lang="en" className={inter.variable} suppressHydrationWarning>
@@ -39,7 +44,7 @@ export default function RootLayout({
               disableTransitionOnChange
             >
               <Toaster />
-              {children}
+              <AxiosProvider>{children}</AxiosProvider>
             </ThemeProvider>
           </body>
         </html>
