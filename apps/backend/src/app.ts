@@ -37,12 +37,12 @@ app.get("/health", (req, res) => {
 import userRoutes from "./modules/user/routes/user.routes.js";
 import projectRoutes from "./modules/project/routes/project.routes.js";
 import messageRoutes from "./modules/messages/routes/message.routes.js";
-import sandboxRoutes from "./modules/sandbox/routes/sandbox.routes.js";
+// import sandboxRoutes from "./modules/sandbox/routes/sandbox.routes.js";
 
 // routes
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/project", projectRoutes);
-app.use("/api/v1/sandbox", sandboxRoutes);
+// app.use("/api/v1/sandbox", sandboxRoutes);
 app.use("/api/v1/messages", messageRoutes);
 
 // error handler middleware
