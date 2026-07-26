@@ -14,7 +14,7 @@ const Page = () => {
         <div className="flex flex-col items-center">
           <SignIn
             appearance={{
-              baseTheme: currentTheme === "dark" ? dark : undefined,
+              theme: currentTheme === "dark" ? dark : undefined,
               elements: {
                 cardBox: "border! shadow-none! rounded-lg!",
               },
