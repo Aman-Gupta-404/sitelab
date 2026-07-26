@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: "sitelab-api",
-      cwd: "./aps/backend",
+      cwd: "./apps/backend",
       script: "dist/server.js",
       interpreter: "none",
       env: {
@@ -11,7 +11,7 @@ module.exports = {
     },
     {
       name: "sitelab-worker",
-      cwd: "./aps/backend",
+      cwd: "./apps/backend",
       script: "dist/workers/index.js",
       interpreter: "none",
       env: {
