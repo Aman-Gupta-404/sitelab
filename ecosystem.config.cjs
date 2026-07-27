@@ -20,5 +20,16 @@ module.exports = {
         NODE_ENV: "production",
       },
     },
+    {
+      name: "sitelab-frontend",
+      cwd: path.join(__dirname, "apps/frontend"),
+      script: "pnpm",
+      args: "start",
+      interpreter: "none",
+      env: {
+        PORT: 3000,
+        NODE_ENV: "production",
+      },
+    },
   ],
 };

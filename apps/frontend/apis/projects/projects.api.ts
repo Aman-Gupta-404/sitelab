@@ -6,7 +6,7 @@ import {
   SendPromptType,
 } from "./projects.types";
 
-const endpoint = "/api/v1/project";
+const endpoint = "/v1/project";
 
 export const projectsApi = {
   sendPrompt: (data: SendPromptType) =>

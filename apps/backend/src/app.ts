@@ -40,10 +40,10 @@ import messageRoutes from "./modules/messages/routes/message.routes.js";
 // import sandboxRoutes from "./modules/sandbox/routes/sandbox.routes.js";
 
 // routes
-app.use("/api/v1/users", userRoutes);
-app.use("/api/v1/project", projectRoutes);
-// app.use("/api/v1/sandbox", sandboxRoutes);
-app.use("/api/v1/messages", messageRoutes);
+app.use("/v1/users", userRoutes);
+app.use("/v1/project", projectRoutes);
+// app.use("/v1/sandbox", sandboxRoutes);
+app.use("/v1/messages", messageRoutes);
 
 // error handler middleware
 app.use(errorHandler);

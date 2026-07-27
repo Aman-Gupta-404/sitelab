@@ -1,7 +1,7 @@
 import { apiClient } from "@/lib/apiClient";
 import { SendMessageType } from "./messages.types";
 
-const endpoint = "/api/v1/messages";
+const endpoint = "/v1/messages";
 
 export const messagesApi = {
   //   getMessages: () => apiClient.get<Message[]>("/messages"),
