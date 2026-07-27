@@ -1,19 +1,21 @@
+const path = require("path");
+
 module.exports = {
   apps: [
     {
       name: "sitelab-api",
-      cwd: "./apps/backend",
+      cwd: path.join(__dirname, "apps/backend"),
       script: "dist/server.js",
-      interpreter: "none",
+      interpreter: "node",
       env: {
         NODE_ENV: "production",
       },
     },
     {
       name: "sitelab-worker",
-      cwd: "./apps/backend",
+      cwd: path.join(__dirname, "apps/backend"),
       script: "dist/workers/index.js",
-      interpreter: "none",
+      interpreter: "node",
       env: {
         NODE_ENV: "production",
       },
