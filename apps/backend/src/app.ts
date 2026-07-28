@@ -18,7 +18,7 @@ app.use(
 
 // WEBHOOK ROUTE FIRST as we need the raw request for the web hook
 app.use(
-  "/api/v1/users/webhook",
+  "/v1/users/webhook",
   express.raw({
     type: "application/json",
   }),
