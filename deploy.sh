@@ -1,34 +1,48 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
-echo "===== Loading Node ====="
+PROJECT_DIR="/var/www/sitelab"
+
+log() {
+    echo
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
+
+log "Loading Node.js environment..."
 
 export NVM_DIR="$HOME/.nvm"
 
 if [ -s "$NVM_DIR/nvm.sh" ]; then
     . "$NVM_DIR/nvm.sh"
+else
+    echo "ERROR: nvm not found at $NVM_DIR"
+    exit 1
 fi
 
-echo "Node: $(node -v)"
-echo "PNPM: $(pnpm -v)"
+log "Using:"
+echo "Node : $(node -v)"
+echo "PNPM : $(pnpm -v)"
+echo "PM2  : $(pm2 -v)"
 
-echo "===== Pulling latest code ====="
+log "Changing directory"
 
-cd /var/www/sitelab
+cd "$PROJECT_DIR"
+
+log "Pulling latest code"
 
 git pull origin main
 
-echo "===== Installing dependencies ====="
+log "Installing dependencies"
 
 pnpm install --frozen-lockfile
 
-echo "===== Building project ====="
+log "Building Turborepo"
 
 pnpm turbo build
 
-echo "===== Reloading PM2 ====="
+log "Reloading PM2"
 
-pm2 reload ecosystem.config.cjs
+pm2 reload ecosystem.config.cjs --update-env
 
-echo "===== Deployment Complete ====="
+log "Deployment completed successfully 🚀"

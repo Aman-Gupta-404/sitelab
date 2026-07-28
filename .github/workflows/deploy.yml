@@ -20,12 +20,4 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
 
           script: |
-            cd /var/www/sitelab
-
-            git pull origin main
-
-            pnpm install --frozen-lockfile
-
-            pnpm turbo build
-
-            pm2 reload ecosystem.config.cjs
+            bash /var/www/sitelab/deploy.sh
