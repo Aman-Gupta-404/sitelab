@@ -19,7 +19,7 @@ axiosInstance.interceptors.response.use(
   (error) => {
     // global error handling
     if (error.response?.status === 401) {
-      console.error("Unauthorized");
+      // console.error("===============Unauthorized==============");
       //TODO: optionally redirect to login
     }
 

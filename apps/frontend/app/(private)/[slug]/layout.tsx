@@ -5,7 +5,7 @@ interface Props {
 }
 
 function ProjectLayout({ children }: Props) {
-  return <section>{children}</section>;
+  return <section className="h-screen w-screen">{children}</section>;
 }
 
 export default ProjectLayout;

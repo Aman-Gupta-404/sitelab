@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { toast } from "sonner";
-import { KeyboardEvent, MouseEvent, useEffect, useState } from "react";
+import { ChangeEvent, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,12 +14,6 @@ import { Button } from "@/components/ui/button";
 import { PROJECT_TEMPLATES } from "../constats";
 import { projectsApi } from "@/apis/projects/projects.api";
 
-const PROMPTS = [
-  "Build a SaaS dashboard with auth, billing, and analytics",
-  "Create a real-time chat app with WebSockets and Redis",
-  "Generate a Next.js blog with markdown and SEO optimization",
-];
-
 const formSchema = z.object({
   value: z
     .string()
@@ -27,16 +21,17 @@ const formSchema = z.object({
     .max(10000, { message: "Value is too long" }),
 });
 
+const MAX_WORDS = 20;
+
 export const ProjectForm = () => {
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(
+    "Make a sinlge component with blue square",
+  );
   const [isFocused, setIsFocused] = useState(false);
 
   // typewriter effect states
-  const [charIndex, setCharIndex] = useState(0);
-  const [promptIndex, setPromptIndex] = useState(0);
   const [isPending, setIsPending] = useState(false);
   const [placeholder, setPlaceholder] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const router = useRouter();
   const form = useForm<z.infer<typeof formSchema>>({
@@ -46,17 +41,39 @@ export const ProjectForm = () => {
     },
   });
 
+  const countWords = (text: string) => {
+    return text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
+  };
+
+  const wordCount = countWords(input);
+  const isWordLimitExceeded = wordCount > MAX_WORDS;
+
+  const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    if (countWords(value) <= MAX_WORDS) {
+      setInput(value);
+    } else {
+      toast.warning("Maximum word limit exceeded");
+    }
+  };
+
   const handleSend = async () => {
+    if (isWordLimitExceeded) {
+      toast.error(`Maximum ${MAX_WORDS} words allowed`);
+      return;
+    }
     try {
-      console.log("here 1");
+      setIsPending(true);
       const res = await projectsApi.sendPrompt({ content: input });
-      console.log({ res, s: res.status });
+
       if (res.status === 201) {
         // navigate user to the project page
         router.push(`/${res.data.name}`);
       }
-    } catch (error) {
-      console.log("error: ", error);
+    } catch (error: any) {
+      toast.error(error?.message || "Something went wrong, please try again");
+    } finally {
+      setIsPending(false);
     }
   };
 
@@ -64,47 +81,12 @@ export const ProjectForm = () => {
     setInput(val);
   };
 
-  //   useEffect(() => {
-  //     const currentPrompt = PROMPTS[promptIndex];
-
-  //     const timeout = setTimeout(
-  //       () => {
-  //         if (!isDeleting) {
-  //           // Typing
-  //           setPlaceholder(currentPrompt.slice(0, charIndex + 1));
-  //           setCharIndex((prev) => prev + 1);
-
-  //           // Finished typing
-  //           if (charIndex === currentPrompt.length) {
-  //             setTimeout(() => {
-  //               setIsDeleting(true);
-  //             }, 1200);
-  //           }
-  //         } else {
-  //           // Deleting
-  //           setPlaceholder(currentPrompt.slice(0, charIndex - 1));
-  //           setCharIndex((prev) => prev - 1);
-
-  //           // Finished deleting
-  //           if (charIndex === 0) {
-  //             setIsDeleting(false);
-  //             setPromptIndex((prev) => (prev + 1) % PROMPTS.length);
-  //           }
-  //         }
-  //       },
-  //       isDeleting ? 40 : 80,
-  //     );
-
-  //     return () => clearTimeout(timeout);
-  //   }, [charIndex, isDeleting, promptIndex]);
-
   return (
     <section className="space-y-6">
       <form
         className={cn(
           "relative border border-black/15 p-4 pt-1 rounded-xl bg-sidebar dark:bg-sidebar transition-all",
           isFocused && "shadow-xs",
-          // showUsage && "rounded-t-none",
         )}
       >
         <TextareaAutosize
@@ -115,7 +97,7 @@ export const ProjectForm = () => {
           maxRows={8}
           className="pt-4 resize-none border-none w-full outline-none bg-transparent"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={handleInputChange}
           placeholder={placeholder}
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
@@ -124,29 +106,44 @@ export const ProjectForm = () => {
             }
           }}
         />
-        <div className="flex gap-x-2 items-end justify-between pt-2">
-          <div className="text-[10px] text-muted-foreground font-mono">
-            <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-              <span>&#8984;</span>Enter
-            </kbd>
-            &nbsp;to submit
+        <div className="flex items-end justify-between pt-2">
+          <div className="flex flex-col gap-1">
+            <div className="text-[10px] text-muted-foreground font-mono">
+              <kbd className="inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px]">
+                <span>&#8984;</span>Enter
+              </kbd>{" "}
+              to submit
+            </div>
+
+            <p
+              className={cn(
+                "text-xs",
+                wordCount > MAX_WORDS
+                  ? "text-destructive"
+                  : wordCount > MAX_WORDS * 0.8
+                    ? "text-yellow-500"
+                    : "text-muted-foreground",
+              )}
+            >
+              {wordCount}/{MAX_WORDS} words
+            </p>
           </div>
+
           <Button
-            disabled={isPending}
+            disabled={isPending || isWordLimitExceeded}
+            className={cn(
+              "size-8 rounded-full",
+              isPending && "bg-muted-foreground border",
+            )}
             onClick={(e) => {
               e.preventDefault();
               handleSend();
             }}
-            variant="outline"
-            className={cn(
-              "size-8 rounded-full cursor-pointer ",
-              //   isPending && "bg-muted-foreground border",
-            )}
           >
             {isPending ? (
               <Loader2Icon className="size-4 animate-spin" />
             ) : (
-              <ArrowUpIcon className="text-black" />
+              <ArrowUpIcon />
             )}
           </Button>
         </div>

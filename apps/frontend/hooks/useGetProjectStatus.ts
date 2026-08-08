@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 
 type SSEMessage =
   | { type: "start" }
-  | { type: "error"; data: any }
   | { type: "not-found"; data: any }
   | { type: "complete"; data: any }
   | { type: "stream"; data: string }
-  | { type: "processing"; data: any };
+  | { type: "processing"; data: any }
+  | { type: "error"; data: any; error: any };
 
 type Status = "idle" | "open" | "closed" | "error" | "processing";
 
@@ -41,7 +41,7 @@ export function useGetProjectStatus() {
     setStatus("processing");
 
     const es = new EventSource(
-      `http://localhost:3001/api/v1/project/status?projectId=${projectId}`,
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/project/status?projectId=${projectId}`,
       { withCredentials: true },
     );
 
@@ -70,7 +70,7 @@ export function useGetProjectStatus() {
             break;
 
           case "error":
-            setError(data.data);
+            setError(data.error);
             setStatus("error");
             closeConnection();
             break;

@@ -24,7 +24,11 @@ function MessageCard({ message }: Props) {
     >
       <Card
         className={`max-w-[80%] px-4 py-3 border border-white/10 ${
-          isUser ? "bg-[#7C5CFF] text-white" : "bg-[#141A2A] text-white"
+          message.error
+            ? "bg-neutral-900 border-red-500/50 text-red-400"
+            : isUser
+              ? "bg-[#7C5CFF] text-white"
+              : "bg-[#141A2A] text-white"
         }`}
       >
         <div className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-words ">

@@ -7,6 +7,7 @@ export interface Message {
 
 export interface SendPromptType {
   content: string;
+  projectSlug?: string;
 }
 
 export interface SendPromptResponseType {
@@ -22,6 +23,7 @@ export interface ProjectResponseType {
   name: string;
   userId: string;
   projectUrl: string;
+  totalPrompts: number;
 }
 
 export interface TreeStructure {

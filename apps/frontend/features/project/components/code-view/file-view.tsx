@@ -1,17 +1,12 @@
+import Prism from "prismjs";
+import { toast } from "sonner";
+import { Fragment, useEffect, useState } from "react";
+import { CopyCheckIcon, CopyIcon, Loader2 } from "lucide-react";
+
 import Hint from "@/components/shared/Hint";
 import { Button } from "@/components/ui/button";
 import { ProjectFiles } from "@/types/project.types";
-import { CopyCheckIcon, CopyIcon } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
-import Prism from "prismjs";
 
-import "./code-theme.css";
-
-import "prismjs/components/prism-javascript";
-import "prismjs/components/prism-jsx";
-import "prismjs/components/prism-tsx";
-import "prismjs/components/prism-typescript";
-import { getLanguagefromExtention } from "@/lib/utils";
 import {
   Breadcrumb,
   BreadcrumbEllipsis,
@@ -20,9 +15,18 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getLanguagefromExtention } from "@/lib/utils";
+
+import "./code-theme.css";
+
+import "prismjs/components/prism-javascript";
+import "prismjs/components/prism-jsx";
+import "prismjs/components/prism-tsx";
+import "prismjs/components/prism-typescript";
 
 interface Props {
+  loading: boolean;
   files: ProjectFiles;
   selectedFile: string | null;
 }
@@ -34,7 +38,6 @@ interface RenderCodeProps {
 
 function FileBreadCrumb({ path }: { path: string }) {
   const pathSegments = path.split("/").slice(1);
-  console.log({ pathSegments });
   const maxSegments = 4;
 
   const renderBreadcrumbItems = () => {
@@ -100,7 +103,7 @@ function RenderCode({ language, code }: RenderCodeProps) {
 }
 
 function FileView(props: Props) {
-  const { files, selectedFile } = props;
+  const { files, selectedFile, loading } = props;
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -112,12 +115,27 @@ function FileView(props: Props) {
     }
   };
 
-  return (
+  return loading ? (
+    <>
+      <div className="h-full w-full flex flex-col">
+        <div className="w-full h-10 border-b p-4">
+          <Skeleton className="h-4 w-30" />
+        </div>
+        <div className="flex flex-col w-full h-full items-center justify-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="space-y-1 text-center">
+            <p className="text-sm text-muted-foreground">
+              Fetching your files...
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
+  ) : (
     <>
       {selectedFile && files[selectedFile] ? (
         <div className="h-full w-full flex flex-col">
           <div className="border-b bg-sidebar px-4 py-2 flex justify-between items-center">
-            {/* TODO: Add breadcrums here */}
             <FileBreadCrumb path={selectedFile} />
             <Hint text="copy to clipboard" side="bottom">
               <Button

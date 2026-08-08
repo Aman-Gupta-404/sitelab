@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   ResizableHandle,
@@ -23,18 +23,21 @@ function ProjectPage() {
 
   const [projSlug, setProjSlug] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [fetchingProj, setFetchingProj] = useState(false);
   const [project, setProject] = useState<Project | ErrorType | null>(null);
   const [messageStatus, setMessageStatus] = useState<
     "processing" | "complete" | "error" | "idle"
   >("idle");
 
+  const refetchRef = useRef(0);
+
   const { status, projectData, error, fetchProjectStatus, closeConnection } =
     useGetProjectStatus();
 
-  const fetchProjectData = async (slug: string) => {
+  const fetchProjectData = async (slug: string, isRefetch = false) => {
     try {
+      !isRefetch && setFetchingProj(true);
       const res = await projectsApi.getProject(slug);
-
       if (res.status == 200) {
         setProject(res.data);
       } else {
@@ -47,20 +50,26 @@ function ProjectPage() {
         error: true,
         message: error.message ?? "Error in Fetching project",
       });
+    } finally {
+      setFetchingProj(false);
     }
   };
 
-  useEffect(() => {
+  const fetchProject = (isRefetch = false) => {
     if (params.slug) {
       const slug = params.slug as string;
       setProjSlug(slug);
 
       // fetch project
-      fetchProjectData(slug);
+      fetchProjectData(slug, isRefetch);
 
       // Fetch messages
       fetchProjectStatus(slug);
     }
+  };
+
+  useEffect(() => {
+    fetchProject();
   }, [params]);
 
   useEffect(() => {
@@ -91,26 +100,43 @@ function ProjectPage() {
     else setMessageStatus("complete");
   }, [status]);
 
-  console.log({ project });
-
   return (
-    <section className="h-screen">
-      <ResizablePanelGroup orientation="horizontal">
+    <section className="h-screen w-screen">
+      <ResizablePanelGroup
+        className="h-screen w-screen border"
+        orientation="horizontal"
+      >
         <ResizablePanel
-          defaultSize={35}
+          defaultSize={"35%"}
           minSize={20}
-          className={"flex flex-col min-h-0"}
+          className={"flex flex-col min-h-0 h-full min-w-0 border"}
         >
-          <ProjectHeader projSlug={projSlug} />
-          <ChatPanel messages={messages} messageStatus={messageStatus} />
+          <ProjectHeader
+            projSlug={projSlug}
+            loading={fetchingProj}
+            name={project && "name" in project ? project.name : ""}
+          />
+          <div className="flex-1 min-h-0">
+            <ChatPanel
+              messages={messages}
+              loading={fetchingProj}
+              project={project}
+              fetchProject={() => fetchProject(true)}
+              messageStatus={messageStatus}
+            />
+          </div>
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel
-          defaultSize={65}
+          defaultSize={"65%"}
           minSize={50}
-          className={"flex flex-col min-h-0"}
+          className={"flex flex-col min-h-0 min-w-0"}
         >
-          <PreviewPanel project={project} />
+          <PreviewPanel
+            project={project}
+            loading={fetchingProj}
+            refetch={refetchRef.current}
+          />
         </ResizablePanel>
       </ResizablePanelGroup>
     </section>

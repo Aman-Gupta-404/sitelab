@@ -1,28 +1,27 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 import { projectsApi } from "@/apis/projects/projects.api";
-import { useParams } from "next/navigation";
 
-import { ProjectFiles, TreeStructure } from "@/types/project.types";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import Hint from "@/components/shared/Hint";
-import { Button } from "@/components/ui/button";
-import { CopyIcon } from "lucide-react";
+import { ProjectFiles, TreeStructure } from "@/types/project.types";
+
 import TreeView from "./tree-view";
 import FileView from "./file-view";
 
 interface Props {
-  code: string;
-  language: string;
+  refetch: number;
 }
 
-function CodeView() {
+function CodeView(props: Props) {
   const params = useParams();
 
+  const [isFetching, setIsFetching] = useState(false);
   const [tree, setTree] = useState<TreeStructure[]>([]);
   const [files, setFiles] = useState<ProjectFiles>({});
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
@@ -37,19 +36,26 @@ function CodeView() {
   useEffect(() => {
     const getFiles = async () => {
       if (!params.slug) return;
+      setIsFetching(true);
+      try {
+        const result = await projectsApi.getProjectFiles(params.slug as string);
 
-      const result = await projectsApi.getProjectFiles(params.slug as string);
-      console.log(result.data.tree);
-
-      if (result.status === 200) {
-        setTree(result.data.tree);
-        setFiles(result.data.files);
-        setSelectedFile("/app/page.tsx");
+        if (result.status === 200) {
+          setTree(result.data.tree);
+          setFiles(result.data.files);
+          setSelectedFile("/app/page.tsx");
+        } else {
+          toast.error("Error in fetching files");
+        }
+      } catch (error: any) {
+        toast.error(error?.message || "Error in fetching files");
+      } finally {
+        setIsFetching(false);
       }
     };
 
     getFiles();
-  }, []);
+  }, [props.refetch]);
 
   return (
     <ResizablePanelGroup>
@@ -57,6 +63,7 @@ function CodeView() {
         <TreeView
           tree={tree}
           files={files}
+          loading={isFetching}
           onSelect={handleSelectFile}
           selectedPath={selectedFile}
         />
@@ -64,7 +71,11 @@ function CodeView() {
       <ResizableHandle className="hover:bg-primary transition-colors" />
       <ResizablePanel defaultSize={70} minSize={50}>
         {/* <p>TODO: Code view</p> */}
-        <FileView files={files} selectedFile={selectedFile} />
+        <FileView
+          files={files}
+          loading={isFetching}
+          selectedFile={selectedFile}
+        />
       </ResizablePanel>
     </ResizablePanelGroup>
   );

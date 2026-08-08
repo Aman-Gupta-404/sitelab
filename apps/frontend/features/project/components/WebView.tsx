@@ -1,8 +1,9 @@
+import { toast } from "sonner";
+import { useState } from "react";
+import { ExternalLinkIcon, Loader2, RefreshCcwIcon } from "lucide-react";
+
 import Hint from "@/components/shared/Hint";
 import { Button } from "@/components/ui/button";
-import { ExternalLinkIcon, RefreshCcwIcon } from "lucide-react";
-import React, { useState } from "react";
-import { toast } from "sonner";
 
 interface Props {
   url: string | null;
@@ -27,8 +28,14 @@ function WebView(props: Props) {
 
   if (!props.url) {
     return (
-      <div className="flex flex-col w-full h-full">
-        <p>No Project View</p>
+      <div className="flex flex-col w-full h-full items-center justify-center gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="space-y-1 text-center">
+          <h3 className="font-medium">Rendering your app...</h3>
+          <p className="text-sm text-muted-foreground">
+            Preparing the latest preview. This should only take a few seconds.
+          </p>
+        </div>{" "}
       </div>
     );
   }

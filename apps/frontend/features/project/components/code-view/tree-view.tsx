@@ -24,6 +24,7 @@ import {
   Folder,
   FolderOpen,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TreeNodeProps {
   node: TreeStructure;
@@ -117,6 +118,7 @@ function TreeNode({ node, level, selectedPath, onSelect }: TreeNodeProps) {
 }
 
 interface Props {
+  loading: boolean;
   files: ProjectFiles;
   tree: TreeStructure[];
   selectedPath: string | null;
@@ -124,7 +126,7 @@ interface Props {
 }
 
 function TreeView(props: Props) {
-  const { tree, onSelect, selectedPath } = props;
+  const { tree, onSelect, selectedPath, loading } = props;
 
   return (
     <div className="h-full overflow-hidden bg-sidebar">
@@ -137,15 +139,26 @@ function TreeView(props: Props) {
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu className="mt-2">
-                  {tree.map((node) => (
-                    <TreeNode
-                      key={node.path}
-                      node={node}
-                      level={0}
-                      selectedPath={selectedPath || ""}
-                      onSelect={onSelect}
-                    />
-                  ))}
+                  {loading ? (
+                    <>
+                      <Skeleton className="w-[95%] h-5 mb-2 rounded ml-2 mr-2" />
+                      <Skeleton className="w-[95%] h-5 mb-2 rounded ml-2 mr-2" />
+                      <Skeleton className="w-[95%] h-5 mb-2 rounded ml-2 mr-2" />
+                      <Skeleton className="w-[95%] h-5 mb-2 rounded ml-2 mr-2" />
+                      <Skeleton className="w-[95%] h-5 mb-2 rounded ml-2 mr-2" />
+                      <Skeleton className="w-[95%] h-5 mb-2 rounded ml-2 mr-2" />
+                    </>
+                  ) : (
+                    tree.map((node) => (
+                      <TreeNode
+                        key={node.path}
+                        node={node}
+                        level={0}
+                        selectedPath={selectedPath || ""}
+                        onSelect={onSelect}
+                      />
+                    ))
+                  )}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

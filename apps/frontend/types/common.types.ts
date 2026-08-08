@@ -2,6 +2,7 @@ export type Message = {
   content: string;
   createdAt: string;
   role: "agent" | "user";
+  error?: boolean;
   _id: string;
 };
 
@@ -10,6 +11,7 @@ export type Project = {
   name: string;
   userId: string;
   projectUrl: string;
+  totalPrompts: number;
 };
 
 export type ErrorType = {

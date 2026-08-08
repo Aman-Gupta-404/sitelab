@@ -34,21 +34,20 @@ export default function RootLayout({
         },
       }}
     >
-      <AxiosProvider>
-        <html lang="en" className={inter.variable} suppressHydrationWarning>
-          <body className="min-h-full flex flex-col">
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            >
-              <Toaster />
-              <AxiosProvider>{children}</AxiosProvider>
-            </ThemeProvider>
-          </body>
-        </html>
-      </AxiosProvider>
+      <html lang="en" className={inter.variable} suppressHydrationWarning>
+        <body className="min-h-full flex flex-col">
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem={false}
+            forcedTheme="dark"
+            disableTransitionOnChange
+          >
+            <Toaster />
+            <AxiosProvider>{children}</AxiosProvider>
+          </ThemeProvider>
+        </body>
+      </html>
     </ClerkProvider>
   );
 }
