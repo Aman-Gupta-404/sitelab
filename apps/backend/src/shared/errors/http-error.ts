@@ -5,6 +5,11 @@ export class BadRequestError extends AppError {
     super(message, 400, "BAD_REQUEST");
   }
 }
+export class CustomError extends AppError {
+  constructor(code: number, message: string) {
+    super(message, code, "Error");
+  }
+}
 
 export class NotFoundError extends AppError {
   constructor(message = "Not Found") {
@@ -31,7 +36,7 @@ export class ForbiddenError extends AppError {
 }
 
 export class InternalServerError extends AppError {
-  constructor(message = "INTERNAL_SERVER_ERROR") {
-    super(message, 500, "INTERNAL_SERVER_ERROR");
+  constructor(message = "INTERNAL_SERVER_ERROR", code = 500) {
+    super(message, code, "INTERNAL_SERVER_ERROR");
   }
 }

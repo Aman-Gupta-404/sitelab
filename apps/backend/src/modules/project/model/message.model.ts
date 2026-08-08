@@ -1,10 +1,53 @@
 import mongoose, { Schema, Document, type ObjectId } from "mongoose";
+import type { IExecutionLog, IToolCall } from "../types/project.types.js";
+
+const ToolCallSchema = new Schema<IToolCall>(
+  {
+    tool: String,
+
+    filesEffected: {
+      type: [String],
+      default: [],
+    },
+
+    success: Boolean,
+
+    summary: String,
+  },
+  {
+    _id: false,
+  },
+);
+
+const ExecutionLogSchema = new Schema<IExecutionLog>(
+  {
+    initialPrompt: {
+      type: String,
+      default: "",
+    },
+
+    finalResponse: {
+      type: String,
+      default: "",
+    },
+
+    toolCalls: {
+      type: [ToolCallSchema],
+      default: [],
+    },
+  },
+  {
+    _id: false,
+  },
+);
 
 export interface IMessage extends Document {
   // projectId: ObjectId;
   content: string;
   role: "user" | "agent";
   createdAt: Date;
+  executionLog?: IExecutionLog;
+  error?: boolean;
   updatedAt: Date;
 }
 
@@ -18,6 +61,14 @@ const MessageSchema = new Schema<IMessage>(
       type: String,
       enum: ["user", "agent"],
       default: "user",
+    },
+    executionLog: {
+      type: ExecutionLogSchema,
+      default: undefined,
+    },
+    error: {
+      type: Boolean,
+      default: false,
     },
     createdAt: {
       type: Date,

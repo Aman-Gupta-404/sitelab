@@ -13,7 +13,9 @@ export interface IProject {
   createdAt: Date;
   updatedAt: Date;
   messages?: ObjectId[];
+  totalPrompts: number;
   projectUrl?: string | null;
+  sandboxId?: string | null;
 }
 
 type ProjectDocument = HydratedDocument<IProject>;
@@ -35,7 +37,15 @@ const ProjectSchema = new Schema<IProject>(
         type: mongoose.Schema.Types.ObjectId,
       },
     ],
+    totalPrompts: {
+      type: Number,
+      default: 1,
+    },
     projectUrl: {
+      type: String,
+      default: null,
+    },
+    sandboxId: {
       type: String,
       default: null,
     },

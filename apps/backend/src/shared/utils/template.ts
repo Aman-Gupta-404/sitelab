@@ -22,7 +22,12 @@ const IGNORE_DIRS = new Set([
   "coverage",
 ]);
 
-const IGNORE_FILES = new Set([".DS_Store"]);
+const IGNORE_FILES = new Set([
+  ".DS_Store",
+  ".bashrc",
+  ".bash_logout",
+  ".profile",
+]);
 
 // This is for using updating the sandbox
 // TODO: Shift them to a saperate node process

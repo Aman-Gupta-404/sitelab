@@ -6,7 +6,7 @@ import type {
 } from "./common.js";
 
 export type ToolUseType = {
-  name: String;
+  name: string;
   input: WriteFilesInput & ReadFileInput & RunCommandInput & UpdateFilesInput;
   id: string;
 };

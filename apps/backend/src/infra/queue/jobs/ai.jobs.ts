@@ -5,25 +5,32 @@ import { LlmClient } from "@/infra/ai/index.js";
 import redisClient from "@/infra/redis/redis.client.js";
 import { updateRedisProjectStatus } from "@/infra/redis/services/project.services.js";
 import { ProjectRepository } from "@/modules/project/repository/project.repository.js";
-import SandboxClass from "@/infra/sandbox/index.js";
+import { ProjectService } from "@/modules/project/service/project.service.js";
 
 export async function processAIJob(job: Job) {
   // initialize redis publisher once
   const publisher = redisClient.getClient();
   const projectRepository = new ProjectRepository();
+  const projectService = new ProjectService(projectRepository);
 
   try {
-    const { prompt, projectId, projectSlug: slug } = job.data;
+    const {
+      prompt,
+      projectId,
+      projectSlug: slug,
+      memory,
+      sandboxId,
+    } = job.data;
 
+    // updating the redis project status as processing
     await updateRedisProjectStatus({
       slug,
       response: null,
       status: "processing",
     });
 
+    // initialize the AI client
     const aiClient = new LlmClient();
-
-    console.log("Executing the LLM Process");
 
     // publish the start of the job
     await publisher.publish(
@@ -33,76 +40,60 @@ export async function processAIJob(job: Job) {
       }),
     );
 
-    // ! This is commented for testing purpose, revert this later on
-    // const response = await aiClient.runAgent({ prompt, projectId });
-    // await projectRepository.handlePromptResponse(response);
-    const response = {
-      sandboxId: "11111",
-      sandboxUrl: "www.sandbox.com",
-      projectId: projectId,
-      message: `<task_summary>
-Created a simple counter button app with a pastel blue theme. The app includes increment/decrease buttons, a large circular display for the count, and a reset button. It uses a soft blue color palette with gradients and is fully functional with React state management.
-</task_summary>`,
-    };
-
-    // ! [TESTING] - Final result after delay
-    await new Promise((resolve) => {
-      setTimeout(async () => {
-        await updateRedisProjectStatus({
-          slug,
-          response,
-          status: "processed",
-        });
-
-        // read the sandbox files
-        const sandboxId = await SandboxClass.getSandboxId();
-        console.log({ sandboxId });
-
-        console.log("---- Reading the updated file ----");
-        // /app/layout.tsx
-        // const files = await getSandboxFiles({
-        //   sandboxId,
-        //   selectedFiles: ["/app/layout.tsx"],
-        // });
-
-        // console.log({ files });
-
-        await projectRepository.handlePromptResponse(response);
-
-        // publish the completion of the job
-        await publisher.publish(
-          `projectId:${slug}`,
-          JSON.stringify({
-            type: "complete",
-            data: response,
-          }),
-        );
-
-        resolve(true);
-      }, 5000);
+    // start/get existing sandbox
+    const sandboxData = await projectService.getProjectSandbox({
+      projectId,
+      sandboxId: sandboxId as string,
     });
 
-    // await updateRedisProjectStatus({ projectId, response });
+    // Run the AI agent with the given prompt and existing project memory
+    const response = await aiClient.runAgent({
+      prompt,
+      projectId,
+      memory,
+      sandbox: sandboxData.sandbox,
+      sandboxId: sandboxData.sandboxId,
+    });
 
-    // // publish the completion of the job
-    // await publisher.publish(
-    //   `projectId:${slug}`,
-    //   JSON.stringify({
-    //     type: "complete",
-    //     data: response,
-    //   }),
-    // );
+    await projectRepository.handlePromptResponse(response, sandboxData.sandbox);
 
-    console.log("LLM Process Completed!");
+    // Updating the redis project status to processed
+    await updateRedisProjectStatus({ slug, response, status: "processed" });
+
+    // publishing the complete event
+    await publisher.publish(
+      `projectId:${slug}`,
+      JSON.stringify({
+        type: "complete",
+        data: response,
+      }),
+    );
 
     return true;
-  } catch (error) {
+  } catch (error: any) {
+    // update the date
+    await projectRepository.addAgentErrorMsg({
+      projectId: job.data.projectId,
+      message: error?.message || "Something went wrong, please try again",
+    });
+
     // publish the start of the job
+    await updateRedisProjectStatus({
+      slug: job.data.projectSlug,
+      response: {
+        sandboxId: null,
+        sandboxUrl: null,
+        projectId: null,
+        message: error?.message || "Something went wrong, please try again",
+      },
+      status: "error",
+    });
+
     await publisher.publish(
       `projectId:${job.data.projectSlug}`,
       JSON.stringify({
         type: "complete",
-        error: error,
+        error: error?.message || "Something went wrong, please try again",
       }),
     );
     return false;

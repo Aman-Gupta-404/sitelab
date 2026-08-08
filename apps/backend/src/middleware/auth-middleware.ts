@@ -10,7 +10,7 @@ export async function requireAuthMiddleware(
 ) {
   const auth = getAuth(req);
   const { userId } = auth;
-  console.log({ auth });
+
   if (!userId) {
     throw new AuthorizationError();
   }

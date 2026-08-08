@@ -26,6 +26,7 @@
     "ioredis": "^5.10.1",
     "mongoose": "^9.5.0",
     "nanoid": "^5.1.11",
+    "openai": "^7.3.0",
     "random-word-slugs": "^0.1.7",
     "svix": "^1.94.0",
     "winston": "^3.19.0",

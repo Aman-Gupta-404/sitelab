@@ -1,8 +1,7 @@
 import { exec } from "child_process";
 import util from "util";
 import path from "path";
-import SandboxClass from "@/infra/sandbox/index.js";
-import { getSandbox } from "@/shared/utils/sandbox.js";
+import { Sandbox } from "@e2b/code-interpreter";
 
 const execAsync = util.promisify(exec);
 
@@ -17,7 +16,7 @@ import { applyFindReplaceUpdates } from "@/shared/utils/tool-helpers.js";
 
 export const toolHandlers = {
   // handler to write files
-  async write_files(input: WriteFilesInput) {
+  async write_files(input: WriteFilesInput, sandbox: Sandbox) {
     const results: { path: string; status: string }[] = [];
     if (typeof input.files === "string") input.files = JSON.parse(input.files);
 
@@ -35,9 +34,6 @@ export const toolHandlers = {
       // Write files in parallel
       await Promise.all(
         input.files.map(async (file) => {
-          const sandboxId = await SandboxClass.getSandboxId();
-          const sandbox = await getSandbox(sandboxId);
-
           const res = await sandbox.files.write(file.path, file.content);
 
           updatedFile[file.path] = file.content;
@@ -49,8 +45,6 @@ export const toolHandlers = {
         files: results,
       });
     } catch (error) {
-      console.log("Error in reading the file");
-      console.log({ error });
       return JSON.stringify({
         success: false,
         error: error,
@@ -59,7 +53,7 @@ export const toolHandlers = {
   },
 
   // handler to update files
-  async update_files(input: UpdateFilesInput) {
+  async update_files(input: UpdateFilesInput, sandbox: Sandbox) {
     const results: {
       path: string;
       success: boolean;
@@ -70,9 +64,6 @@ export const toolHandlers = {
       const { path, updates } = file;
 
       try {
-        const sandboxId = await SandboxClass.getSandboxId();
-        const sandbox = await getSandbox(sandboxId);
-
         // 1. Read existing file
         const existingContent = await sandbox.files.read(path);
 
@@ -100,11 +91,8 @@ export const toolHandlers = {
           path,
           success: true,
         });
-        console.log("=== update file response ===");
-        console.log({ results });
         return JSON.stringify(results);
       } catch (err: any) {
-        console.log("==== update file error [handler] ====");
         results.push({
           path,
           success: false,
@@ -113,19 +101,16 @@ export const toolHandlers = {
       }
     }
 
-    return {
+    return JSON.stringify({
       success: results.every((r) => r.success),
       results,
-    };
+    });
   },
 
-  async read_file(input: ReadFileInput) {
+  async read_file(input: ReadFileInput, sandbox: Sandbox) {
     try {
       const contents: any = {};
       for (const path of input.paths) {
-        const sandboxId = await SandboxClass.getSandboxId();
-        const sandbox = await getSandbox(sandboxId);
-
         const content = await sandbox.files.read(path);
 
         contents[path] = content;
@@ -135,12 +120,14 @@ export const toolHandlers = {
         data: contents,
       });
     } catch (error) {
-      console.log("Error in reading the file");
-      console.log({ error });
+      return JSON.stringify({
+        success: false,
+        error: error,
+      });
     }
   },
 
-  async run_command(input: RunCommandInput) {
+  async run_command(input: RunCommandInput, sandbox: Sandbox) {
     if (typeof input === "string") JSON.parse(input);
 
     // 🔒 Restrict commands
@@ -168,11 +155,6 @@ export const toolHandlers = {
 
       // exec the command in the sandbox
 
-      const sandboxId = await SandboxClass.getSandboxId();
-
-      const sandbox = await getSandbox(sandboxId);
-      console.log("\nRunning command: ", input.command);
-
       const result = await sandbox.commands.run(input.command, {
         onStdout: (data: string) => {
           buffers.stdout += data;
@@ -184,9 +166,6 @@ export const toolHandlers = {
 
       return result.stdout;
     } catch (error) {
-      console.error(
-        `Command Failed: ${error} \nstdout: ${buffers.stdout} \nstderr: ${buffers.stderr}`,
-      );
       return `Command Failed: ${error} \nstdout: ${buffers.stdout} \nstderr: ${buffers.stderr}`;
     }
   },

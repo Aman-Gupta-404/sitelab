@@ -1,6 +1,13 @@
+import type {
+  ExecutionLog,
+  MemoryContext,
+  RawMemoryContext,
+} from "@/types/common.js";
+
 export interface CreateMessageBody {
   content: string;
   role: "agent" | "user";
+  projectSlug?: string;
 }
 
 export interface HandlePromptResponseBody {
@@ -8,11 +15,15 @@ export interface HandlePromptResponseBody {
   sandboxUrl: string;
   message: string | null;
   projectId: string;
+  executionLog: ExecutionLog;
+  updatedFilesList: string[];
+  memoryContext: RawMemoryContext;
 }
 
 export type SSEPayload = {
   type: "processing" | "complete" | "error" | "not-found";
   data?: any;
+  error?: any;
 };
 
 export type FileDocument = {
@@ -44,3 +55,17 @@ export type UserOwnsProjectProps = {
   slug: string | null;
   project: string | null;
 };
+
+export interface IToolCall {
+  tool: string;
+  filesEffected: string[];
+  success: boolean;
+  summary: string;
+}
+
+export interface IExecutionLog {
+  initialPrompt: string;
+  finalResponse: string;
+  iterations: number;
+  toolCalls: IToolCall[];
+}

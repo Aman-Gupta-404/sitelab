@@ -45,7 +45,7 @@ export class UserRepository {
         },
         {
           upsert: true,
-          new: true,
+          returnDocument: "after",
         },
       );
 
@@ -74,18 +74,35 @@ export class UserRepository {
     }
   }
 
-  async updateUserLastLogin(clerkId: string) {
+  async updateUserLastLogin({
+    email,
+    clerkId,
+    lastName,
+    imageUrl,
+    firstName,
+  }: CreateUser) {
     try {
-      const response = await User.findOneAndUpdate(
+      const user = await User.findOneAndUpdate(
+        { clerkId },
         {
-          clerkId: clerkId,
+          $set: {
+            lastLoginAt: new Date(),
+          },
+          $setOnInsert: {
+            email,
+            clerkId,
+            firstName,
+            lastName,
+            imageUrl,
+          },
         },
         {
-          $set: { lastLoginAt: new Date() },
+          upsert: true, // Insert if not found
+          returnDocument: "after", // Return the updated/inserted document
         },
       );
 
-      return response;
+      return true;
     } catch (error: any) {
       throw new InternalServerError(error.message ?? "Error in updating User");
     }

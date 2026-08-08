@@ -9,23 +9,14 @@ import type { NextFunction, Request, Response } from "express";
 
 export class ProjectController {
   private service: ProjectService;
-  // private redisClient: RedisClient
   constructor() {
     this.service = new ProjectService();
-    // this.redisClient = redisClient
   }
 
   handlePrompt = async (req: Request, res: Response, next: NextFunction) => {
     const data = req.body;
     try {
-      // get the userId from clerk handler
-      const auth = getAuth(req);
-
-      if (!auth || !auth.userId) {
-        throw new AuthorizationError();
-      }
-
-      const userClerkId = auth.userId;
+      const userClerkId = req.user?.clerkId as string;
 
       const message = await this.service.handlePrompt(data, userClerkId);
 

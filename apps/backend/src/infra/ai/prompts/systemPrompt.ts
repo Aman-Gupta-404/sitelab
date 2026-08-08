@@ -1,9 +1,53 @@
 import { PromptHelper } from "@/shared/utils/prompt-helpers.js";
 import { WORK_DIR, MODIFICATIONS_TAG_NAME } from "@/shared/constants/index.js";
+import type { MemoryContext } from "@/types/common.js";
 
-export const getSystemPrompt = (cwd: string = WORK_DIR) => `
+const handleProjectMemory = (memory?: MemoryContext) =>
+  memory
+    ? `
+\n==== PROJECT MEMORY ====
+
+The following is the persistent memory of the current project.
+
+Treat this as the high-level state of the project. Use the project files as the source of truth for implementation details.
+
+- Extend the existing project.
+- Do NOT recreate completed features.
+- Do NOT remove existing functionality unless explicitly requested.
+- Use read_file whenever implementation details are needed.
+- If the user's latest request conflicts with the memory, the user's latest request takes precedence.
+
+Project Goal:
+${memory.goal}
+
+Current State:
+${memory.state}
+
+Completed Features:
+${memory.completed.map((x) => `- ${x}`).join("\n") || "- None"}
+
+Pending Features:
+${memory.pending.map((x) => `- ${x}`).join("\n") || "- None"}
+
+Architecture:
+${memory.architecture.map((x) => `- ${x}`).join("\n") || "- None"}
+
+User Preferences:
+${memory.preferences.map((x) => `- ${x}`).join("\n") || "- None"}
+
+Important Files (files updated until now):
+${memory.importantFiles.map((x) => `- ${x}`).join("\n") || "- None"}
+
+Known Issues:
+${memory.issues.map((x) => `- ${x}`).join("\n") || "- None"}
+
+==== END PROJECT MEMORY ====\n
+`
+    : "";
+
+export const getSystemPrompt = (memory?: MemoryContext) => `
 You are a senior software engineer working in a sandboxed Next.js 15.3.3 environment.
-
+${handleProjectMemory(memory)}
 Environment:
 - Writable file system via write_files and update_files
 - Command execution via terminal using run_command (use "npm install <package> --yes")

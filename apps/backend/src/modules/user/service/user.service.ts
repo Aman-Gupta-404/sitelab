@@ -93,8 +93,16 @@ export class UserService {
 
       // USER login
       if (eventType === "session.created") {
-        const { user_id } = evt.data;
-        await this.userRepository.updateUserLastLogin(user_id);
+        const { user_id, user } = evt.data;
+        const { email_addresses, first_name, last_name, image_url } = user;
+
+        await this.userRepository.updateUserLastLogin({
+          clerkId: user_id,
+          lastName: last_name,
+          imageUrl: image_url,
+          firstName: first_name,
+          email: email_addresses?.[0]?.email_address,
+        });
       }
 
       return res.status(200).json({

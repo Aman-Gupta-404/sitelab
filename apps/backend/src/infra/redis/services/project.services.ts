@@ -7,9 +7,9 @@ type RedisProjectStatusProps = {
     | false
     | null
     | {
-        sandboxId: string;
-        sandboxUrl: string;
-        projectId: string;
+        sandboxId: string | null;
+        sandboxUrl: string | null;
+        projectId: string | null;
         message: string | null;
       };
   status: "enquing" | "enqued" | "processing" | "processed" | "error";
@@ -24,7 +24,7 @@ export const updateRedisProjectStatus = async ({
     const redis = redisClient.getClient();
     const key = projectStatusKey(slug);
     const body = response ? { ...response, status } : { status };
-    return await redis.set(key, JSON.stringify(body), "EX", 3600);
+    return await redis.set(key, JSON.stringify(body), "EX", 300);
   } catch (error) {
     return null;
   }

@@ -1,5 +1,6 @@
 import { aiQueue } from "@/infra/queue/ai.queue.js";
 import { MessageModel } from "../model/message.model.js";
+import { Sandbox } from "@e2b/code-interpreter";
 import {
   ForbiddenError,
   InternalServerError,
@@ -28,13 +29,15 @@ export class ProjectService {
       // get the userId from clerkId
       const user = await userApi.getUserByClerkId(clerkId);
 
+      let result;
+
       // create a message and project
-      const result = await this.projectRepository.handlePrompt(
+      result = await this.projectRepository.handlePrompt(
         data,
         user._id.toString(),
       );
 
-      // add to ai queeue
+      // add to AI queeue
       if (result) {
         // update the redis status to be enqueuing
         const r1 = await updateRedisProjectStatus({
@@ -43,24 +46,32 @@ export class ProjectService {
           status: "enquing",
         });
 
-        await aiQueue.add(`generate-code-${result._id.toString()}`, {
-          prompt: data.content,
-          projectSlug: result.name,
-          projectId: result._id.toString(),
-        });
+        await aiQueue.add(
+          `generate-code-${result._id.toString()}`,
+          {
+            prompt: data.content,
+            projectSlug: result.name,
+            sandboxId: result.sandboxId,
+            projectId: result._id.toString(),
+            memory: result.projectMemory,
+          },
+          // adding this dealy, as sse connection is set before queue starts,
+          // and error updates done go properly
+          {
+            delay: 2000, // 2 seconds in milliseconds
+          },
+        );
 
         // update the redis status to be queued
-        const r2 = await updateRedisProjectStatus({
+        await updateRedisProjectStatus({
           slug: result.name,
           response: null,
           status: "enqued",
         });
-        console.log("r2: ", r2);
       }
       return result;
     } catch (error: any) {
-      console.log(error);
-      throw new InternalServerError(error.message);
+      throw new InternalServerError(error.message, error?.statusCode || 500);
     }
   }
 
@@ -168,7 +179,10 @@ export class ProjectService {
         return res.end();
       }
 
-      if (projectStatus && projectStatus.status === "processed") {
+      if (
+        (projectStatus && projectStatus.status === "processed") ||
+        projectStatus.status === "error"
+      ) {
         const projectData =
           await this.projectRepository.getProjectMessages(projectId);
 
@@ -201,7 +215,11 @@ export class ProjectService {
             // get project status
             const projectData =
               await this.projectRepository.getProjectMessages(projectId);
-            send({ type: "complete", data: projectData });
+            send({
+              type: parsed.type,
+              data: projectData,
+              error: parsed.error || null,
+            });
 
             cleanup();
           }
@@ -210,6 +228,7 @@ export class ProjectService {
           send({
             type: "error",
             data: "Failed to parse message",
+            error: "Something went wrong, please try again",
           });
         }
       });
@@ -238,6 +257,61 @@ export class ProjectService {
       );
       await redisClient.closeSubscriber(sub);
       res.end();
+      throw new InternalServerError(error.message);
+    }
+  }
+
+  async getProjectSandbox({
+    sandboxId,
+    projectId,
+  }: {
+    projectId: string;
+    sandboxId?: string;
+  }) {
+    try {
+      // ---- Step: 1 ----
+      // if sandboxId is provided
+      // -> check if sandbox is running, if yes, then return the id
+      // ->       else, create a new sandboxId, start the sandbox, and return the new ID
+      // else create a new sandboxId & start the sandbox, and return the new ID
+      if (sandboxId) {
+        // TODO: Put this entire thing inside a saperate trycatch
+        try {
+          const sandbox = await Sandbox.connect(sandboxId);
+          const alive = await sandbox.isRunning();
+
+          if (alive) {
+            // return the valid data
+            return { sandbox, sandboxId };
+          }
+        } catch (error: any) {
+          // TODO: remove the throw error to create fresh sandbox
+          throw new Error(error);
+          // will continue the sandbox creation
+        }
+      }
+
+      // ---- Create a new sandbox ----
+      const sandbox = await Sandbox.create("ag9139563/sitelab-next-test-2", {
+        timeoutMs: 15 * 60 * 1000, // 15 minutes
+      }); // TODO: Shift the template name to env
+
+      const newSandboxId = sandbox.sandboxId;
+
+      // update the sandboxId to projects DB
+      await this.projectRepository.updateProjectSandboxId(
+        projectId,
+        newSandboxId,
+      );
+
+      // TODO: load the updated files to this sandbox
+
+      return {
+        sandbox,
+        sandboxId: newSandboxId,
+      };
+    } catch (error: any) {
+      console.log({ error: error?.data, msg: error?.message });
       throw new InternalServerError(error.message);
     }
   }
