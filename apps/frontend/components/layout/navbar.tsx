@@ -14,11 +14,12 @@ function Navbar() {
   return (
     <nav
       className={cn(
-        "p-4 bg-transparent fixed top-0 left-0 right-0 z-50 transition-all duration-200 border-b border-transparent",
+        "h-15 bg-transparent fixed top-0 left-0 right-0 z-50 transition-all duration-200 border-b border-transparent",
+        "flex justify-center align-center",
         isScrolled && "bg-background border-border",
       )}
     >
-      <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
+      <div className="max-w-5xl mx-auto w-full flex justify-between items-center m-auto">
         <Link href="/" className="flex items-center gap-2">
           <Image src={"logo.svg"} alt="logo" width={24} height={24} />
           <span className="font-semibold text-lg">Sitelab</span>

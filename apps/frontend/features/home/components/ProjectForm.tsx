@@ -24,9 +24,8 @@ const formSchema = z.object({
 const MAX_WORDS = 20;
 
 export const ProjectForm = () => {
-  const [input, setInput] = useState(
-    "Make a sinlge component with blue square",
-  );
+  // "Make a sinlge component with blue square",
+  const [input, setInput] = useState("");
   const [isFocused, setIsFocused] = useState(false);
 
   // typewriter effect states

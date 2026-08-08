@@ -293,7 +293,7 @@ export class ProjectService {
 
       // ---- Create a new sandbox ----
       const sandbox = await Sandbox.create("ag9139563/sitelab-next-test-2", {
-        timeoutMs: 15 * 60 * 1000, // 15 minutes
+        timeoutMs: 20 * 60 * 1000, // 20 minutes
       }); // TODO: Shift the template name to env
 
       const newSandboxId = sandbox.sandboxId;

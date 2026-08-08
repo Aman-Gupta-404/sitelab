@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import {
@@ -17,13 +17,16 @@ import { projectsApi } from "@/apis/projects/projects.api";
 import ProjectHeader from "@/features/project/components/ProjectHeader";
 
 import { ErrorType, Message, Project } from "@/types/common.types";
+import { SessionExpiredModal } from "@/features/project/modals/sessionExpiredModal";
 
 function ProjectPage() {
   const params = useParams();
+  const router = useRouter();
 
   const [projSlug, setProjSlug] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [fetchingProj, setFetchingProj] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [project, setProject] = useState<Project | ErrorType | null>(null);
   const [messageStatus, setMessageStatus] = useState<
     "processing" | "complete" | "error" | "idle"
@@ -73,11 +76,27 @@ function ProjectPage() {
   }, [params]);
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
     if (projectData) {
       // setting up the projects
       const { messages, ...project } = projectData;
 
       setProject(project as Project);
+
+      // check for session expired
+      const TWENTY_MINUTES = 20 * 60 * 1000;
+      const projCreatedAt = new Date(project.createdAt);
+      const elapsedTime = Date.now() - projCreatedAt.getTime();
+
+      if (elapsedTime >= TWENTY_MINUTES) {
+        setSessionExpired(true);
+      } else {
+        const remainingTime = TWENTY_MINUTES - elapsedTime;
+
+        timer = setTimeout(() => {
+          setSessionExpired(true);
+        }, remainingTime);
+      }
     }
     if (projectData && projectData?.messages?.length) {
       const newMessages = projectData.messages as Message[];
@@ -91,6 +110,12 @@ function ProjectPage() {
         return Array.from(map.values());
       });
     }
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
   }, [projectData, error]);
 
   useEffect(() => {
@@ -139,6 +164,13 @@ function ProjectPage() {
           />
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      <SessionExpiredModal
+        open={sessionExpired}
+        onOpenChange={() => {
+          router.push("/");
+        }}
+      />
     </section>
   );
 }
