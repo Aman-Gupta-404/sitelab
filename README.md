@@ -35,6 +35,7 @@ The platform also maintains **project-level AI memory**, allowing users to conti
 - [Failure Handling](#failure-handling)
 - [Security](#security)
 - [Technology Stack](#technology-stack)
+- [CI/CD & Deployment](#cicd--deployment)
 - [Repository Structure](#repository-structure)
 - [Engineering Decisions](#engineering-decisions)
 - [Engineering Challenges & Solutions](#engineering-challenges--solutions)
@@ -697,6 +698,37 @@ The agent interacts with the generated project through a controlled set of tools
 | Memory Generation         | Gemini             | Project-memory summarization           |
 | Code Execution            | E2B                | Isolated application sandboxes         |
 | Realtime Communication    | SSE                | Server-to-client execution updates     |
+
+---
+
+# CI/CD & Deployment
+
+Sitelab uses **GitHub Actions** for continuous deployment to a private **DigitalOcean VPS** running the production application.
+
+Every push to the `main` branch triggers the deployment workflow:
+
+```text
+Developer
+    │
+    │ git push
+    ▼
+GitHub Repository
+    │
+    ▼
+GitHub Actions
+    │
+    │ SSH
+    ▼
+DigitalOcean VPS
+    │
+    ├── Pull latest code
+    ├── Install dependencies
+    ├── Build Turborepo
+    └── Reload PM2
+            │
+            ▼
+       Production App
+```
 
 ---
 
